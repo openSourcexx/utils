@@ -1,0 +1,15 @@
+# Eclipse
+.metadata/
+**/target/
+**/.settings
+**/.classpath
+
+# idea
+.idea/
+**/*.iml
+*.iml
+
+# Others
+node_modules/
+**/MANIFEST.MF
+**/logs
