@@ -68,10 +68,7 @@ public class DateUtil {
 
 
     /**
-     *     * 获得本周的最后一天，周日
-     *     * 
-     *     * @return
-     *    
+     * 获得本周的最后一天，周日   
      */
     public static Date getCurrentWeekDayEndTime() {
         Calendar c = Calendar.getInstance();
@@ -86,10 +83,7 @@ public class DateUtil {
     }
 
     /**
-     *     * 获得本月的开始时间
-     *     * 
-     *     * @return
-     *    
+     *  获得本月的开始时间 
      */
     public static Date getCurrentMonthStartTime() {
         Calendar c = Calendar.getInstance();
@@ -246,6 +240,80 @@ public class DateUtil {
         }
     }
 
+    /**
+     * 日期转字符串
+     * 默认YYYY-MM-dd。
+     * @return String "YYYY-MM-dd"格式的日期字符串。
+     */
+    public static String getDate() {
+        SimpleDateFormat formatter = new SimpleDateFormat("YYYY-MM-dd");
+        return formatter.format(new Date());
+    }
+
+    /**
+     * 日期转字符串
+     */
+    public static String getDate(Date date, String format) {
+        SimpleDateFormat formatter = new SimpleDateFormat(format);
+
+        return formatter.format(date);
+    }
+
+    /**
+     * 时间戳转字符串时间
+     * @param timeStamp 时间戳
+     * @param format
+     * @return
+     */
+    public static String getDate(long timeStamp, String format) {
+        Date date = new Date(timeStamp);
+        SimpleDateFormat formatter = new SimpleDateFormat(format);
+
+        return formatter.format(date);
+    }
+
+    /**
+     * 字符串时间转时间
+     * @param dateStr 字符串时间
+     * @param pattern 时间
+     * @return
+     */
+    public static Date getDate(String dateStr, String pattern) {
+        if (DateUtil.isDateTime(dateStr, pattern)) {
+            SimpleDateFormat df = new SimpleDateFormat(pattern);
+            try {
+                Date date = df.parse(dateStr);
+                return date;
+            } catch (Exception ex) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 判断字符串是否日期时间格式
+     * @param str
+     * @param pattern 指定日期格式为四位年/两位月份/两位日期，注意yyyy/MM/dd区分大小写；
+     * @return
+     */
+    public static boolean isDateTime(String str, String pattern) {
+        boolean convertSuccess = true;
+
+        SimpleDateFormat format = new SimpleDateFormat(pattern);
+        try {
+            // 设置lenient为false. 否则SimpleDateFormat会比较宽松地验证日期，比如2007/02/29会被接受，并转换成2007/03/01
+            format.setLenient(false);
+            format.parse(str);
+        } catch (Exception e) {
+            // e.printStackTrace();
+            // 如果throw java.text.ParseException或者NullPointerException，就说明格式不对
+            convertSuccess = false;
+        }
+        return convertSuccess;
+    }
+
+
     public static void main(String[] args) {
         System.out.println(DateUtil.getCurrentMonthStartTime());
         System.out.println(DateUtil.getCurrentMonthEndTime());
@@ -255,6 +323,7 @@ public class DateUtil {
         System.out.println(DateUtil.getCurrentYearEndTime());
         System.out.println(DateUtil.getCurrentWeekDayStartTime());
         System.out.println(DateUtil.getCurrentWeekDayEndTime());
+        System.out.println(DateUtil.getDate(1547084941000l,"YYYY-MM-dd HH:mm:ss"));
     }
 
 }
