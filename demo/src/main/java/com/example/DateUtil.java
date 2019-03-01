@@ -7,6 +7,16 @@ import java.util.Date;
 
 public class DateUtil {
 
+    public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd";
+    public static final String DEFAULT_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+    public static final String DATE_FORMAT_1 = "yyyy-MM-dd";
+    public static final String DATE_FORMAT_2 = "yyyyMMdd";
+    public static final String DATE_FORMAT_3 = "yyyy年MM月dd日";
+    public static final String DATETIME_FORMAT_2 = "yyyyMMddHHmmss";
+    public static final String DATETIME_FORMAT_4 = "yyyy/MM/dd HH:mm:ss";
+    public static final String DATETIME_FORMAT_5 = "yyyy-MM-dd HH:mm:ss.SSS";
+
     private static SimpleDateFormat shortSdf = new SimpleDateFormat("yyyy-MM-dd");
     private static SimpleDateFormat longSdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
