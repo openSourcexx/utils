@@ -119,9 +119,6 @@ public class Bean2JsonUtil {
             } else if ("class java.lang.Double".equals(typeName) || "double".equals(typeName) || "Double".equals(
                 typeName)) {
                 builder.append(1.0d);
-            } else if ("class java.lang.Double".equals(typeName) || "double".equals(typeName) || "Double".equals(
-                typeName)) {
-                builder.append(1.0d);
             } else if ("class java.lang.Boolean".equals(typeName) || "boolean".equals(typeName) || "Boolean".equals(
                 typeName)) {
                 builder.append(true);

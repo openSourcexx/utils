@@ -94,11 +94,6 @@ public class GenUtil {
         }
     }
 
-
-    public static void main(String[] args) {
-        getTableNames(null,"t_user");
-    }
-
     /**
      * 生成属性
      * @param name
@@ -134,5 +129,39 @@ public class GenUtil {
         } else {
             return " String ";
         }
+    }
+
+    /**
+     * 将column字段转为bean set方法
+     * @param dbName
+     * @param tableName
+     */
+    private static void dbColumn2Set(String dbName, String tableName) {
+        Connection conn = DatabaseConnUtil.getConnection(dbName);
+        DatabaseMetaData metaData = null;
+        ResultSet rs = null;
+        try {
+            metaData = conn.getMetaData();
+            rs = metaData.getColumns(null, null, tableName.toUpperCase(), "%");
+            StringBuilder builder = new StringBuilder();
+            while (rs.next()) {
+                // builder.append("\"");
+                String column = rs.getString("COLUMN_NAME");
+                String field = ColumnToBean.setField(column);
+                ColumnToBean.setAndGetMethod("refundInvoiceDetail","invoiceDetail",field); // a.set(b.get())
+                // ColumnToBean.setMethod("a",column);
+            }
+            // System.out.println(builder.toString());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            DatabaseConnUtil.closeConnection(conn);
+        }
+    }
+
+    public static void main(String[] args) {
+
+        // getTableNames(null,"t_user");
+        dbColumn2Set("loan-jcxf_dev", "credit_refund_loan_invoice");
     }
 }

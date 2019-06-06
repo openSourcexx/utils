@@ -46,6 +46,11 @@ public class DatabaseConnUtil {
         return conn;
     }
 
+    /**
+     * 连接指定数据库
+     * @param dbName 数据库名
+     * @return
+     */
     public static Connection getConnection(String dbName) {
         Connection conn = null;
         String url = "jdbc:mysql://localhost:3306/" + dbName
