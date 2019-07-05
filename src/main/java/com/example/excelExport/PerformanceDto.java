@@ -3,53 +3,70 @@ package com.example.excelExport;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+import com.example.annotation.Excel;
+
 /**
  * 员工绩效
  */
 public class PerformanceDto implements Serializable{
     /** 员工姓名 */
+    @Excel(name = "员工姓名")
     private String username;
 
     /** 人工进件量 */
+    @Excel(name = "人工进件量")
     private long handleCount = 0L;
 
     /** 通过率 */
+    @Excel(name = "通过率")
     private BigDecimal approvalRate;
 
     /** 电核时效 */
+    @Excel(name = "电核时效")
     private BigDecimal telAging;
 
     /** 非电核时效 */
+    @Excel(name = "电核时效")
     private BigDecimal notTelAging;
 
     /** 审批时效 */
+    @Excel(name = "审批时效")
     private BigDecimal approvalAging;
 
     /** 挂起时效 */
+    @Excel(name = "挂起时效")
     private BigDecimal holdAging;
 
     /** 总时效 */
+    @Excel(name = "总时效")
     private BigDecimal totalAging;
 
     /** 挂起数量 */
+    @Excel(name = "挂起数量")
     private long holdCount;
 
-    /** 超市案件数量 */
+    /** 超时案件数量 */
+    @Excel(name = "超时案件数量")
     private long overTimeCount;
 
     /** 通过改拒绝 */
+    @Excel(name = "通过改拒绝")
     private BigDecimal finalRefuseRate;
 
     /** 通过改额度 */
+    @Excel(name = "通过改额度")
     private BigDecimal amtChangeRate;
 
     /** 反馈反欺诈案件笔数 */
+    @Excel(name = "反馈反欺诈案件笔数")
     private long antiFraudCount;
 
     /** 驳回率*/
+    @Excel(name = "驳回率")
     private BigDecimal rejectRate;
 
     /** 主动复核案件笔数*/
+    @Excel(name = "主动复核案件笔数")
     private long reviewCount;
 
     public PerformanceDto() {
