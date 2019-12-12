@@ -1,8 +1,10 @@
 package com.example.excelExport;
 
 import java.beans.PropertyDescriptor;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -14,19 +16,28 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.compress.utils.Lists;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.DateUtil;
+import com.example.UuidUtil;
 import com.example.annotation.Excel;
+import com.example.exception.BizException;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -291,6 +302,170 @@ public class ExcelUtil {
         return true;
     }
 
+
+    /**
+     * 从第一行开始读取excel文件
+     *
+     * @param fileStream 文件流
+     * @return 文件内容
+     */
+    public static List<List<String>> readExcel(InputStream fileStream) {
+        return readExcel(fileStream, 1);
+    }
+
+    /**
+     * 从第rowNum开始读取excel文件
+     *
+     * @param fileStream 文件流
+     * @param rowNum 开始读取的行数，最小为1
+     * @return 文件内容
+     */
+    public static List<List<String>> readExcel(InputStream fileStream, int rowNum) {
+        try {
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(fileStream);
+            XSSFSheet xssfSheet = xssfWorkbook.getSheetAt(0);
+            return readExcel(xssfWorkbook, rowNum, xssfSheet.getLastRowNum() - rowNum + 1);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 从rowNum开始读取数据，读size行
+     *
+     * @param fileStream 文件流
+     * @param rowNum 开始读取的行数，最小为1
+     * @param size 读取多少行
+     * @return 文件内容
+     */
+    public static List<List<String>> readExcel(InputStream fileStream, int rowNum, int size) {
+        try {
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook(fileStream);
+            return readExcel(xssfWorkbook, rowNum, size);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 从rowNum开始读取数据，读size行
+     *
+     * @param workbook excel文件
+     * @param rowNum 开始读取的行数，最小为1
+     * @param size 读取多少行
+     * @return 文件内容
+     */
+    public static List<List<String>> readExcel(XSSFWorkbook workbook, int rowNum, int size) {
+        try {
+            List<List<String>> result = Lists.newArrayList();
+            XSSFSheet xssfSheet = workbook.getSheetAt(0);
+            if (xssfSheet == null) {
+                throw new BizException("excel文件为空");
+            }
+            int count = size + rowNum - 1;
+            for (; rowNum <= count; rowNum++) {
+                XSSFRow xssfRow = xssfSheet.getRow(rowNum);
+                if (xssfRow == null) {
+                    continue;
+                }
+                int minColIx = xssfRow.getFirstCellNum();
+                int maxColIx = xssfRow.getLastCellNum();
+                List<String> rowList = Lists.newArrayList();
+                for (int colIx = minColIx; colIx < maxColIx; colIx++) {
+                    XSSFCell cell = xssfRow.getCell(colIx);
+                    if (cell == null) {
+                        continue;
+                    }
+                    rowList.add(getStringVal(cell));
+                }
+
+                // 如果前三列都为空，则认为解析完毕
+                if (CollectionUtils.isEmpty(rowList)) {
+                    break;
+                }
+
+                result.add(rowList);
+            }
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 根据data生成excel并在本地生成文件
+     *
+     * @param data 要设置的数据
+     * @param filePathWithName 生成文件的路径，带文件名
+     * @return 生成的文件File
+     */
+    public static File create(List<List<String>> data, String filePathWithName) {
+        try {
+            XSSFWorkbook xssfWorkbook = new XSSFWorkbook();
+            XSSFSheet xssfSheet = xssfWorkbook.createSheet();
+            // 遍历行
+            generateCellValue(data, xssfSheet);
+
+            File nFile = new File(filePathWithName);
+            OutputStream os = new FileOutputStream(nFile);
+            xssfWorkbook.write(os);
+            os.flush();
+            os.close();
+            return nFile;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 获取表格中的值
+     *
+     * @param cell 表格
+     * @return 值
+     */
+    private static String getStringVal(XSSFCell cell) {
+        cell.setCellType(CellType.STRING);
+        return cell.getStringCellValue();
+    }
+
+    public static String renameFile(String fileName) {
+        return UuidUtil.nextId() + fileName.substring(fileName.lastIndexOf("."));
+    }
+
+    /**
+     * 创建sheet
+     */
+    public static void createSheet(List<List<String>> data, int sheetIndex, XSSFWorkbook xssfWorkbook) {
+        XSSFSheet xssfSheet = xssfWorkbook.createSheet();
+        xssfWorkbook.setSheetName(sheetIndex - 1, "第" + sheetIndex + "页");
+
+        generateCellValue(data, xssfSheet);
+    }
+
+    /**
+     * 把data中的参数设置到excel中
+     *
+     * @param data 参数
+     * @param xssfSheet 表格
+     */
+    private static void generateCellValue(List<List<String>> data, XSSFSheet xssfSheet) {
+        // 遍历行
+        for (int i = 0; i < data.size(); i++) {
+            XSSFRow row = xssfSheet.createRow(i);
+            // 遍历列
+            List<String> rowData = data.get(i);
+            for (int j = 0; j < rowData.size(); j++) {
+                XSSFCell cell = row.createCell(j);
+                cell.setCellValue(rowData.get(j));
+            }
+
+        }
+    }
+
     public static void main(String[] args) {
 
         List<PerformanceDto> dtoList = new ArrayList<>();
@@ -313,98 +488,6 @@ public class ExcelUtil {
             pojo.setReviewCount(i+3);
             dtoList.add(pojo);
         }
-        //
-        //
-        // ArrayList<LinkedHashMap<String, String>> respList = new ArrayList<>();
-        // //按展示要求组装
-        // dtoList.forEach(pojo -> {
-        //     LinkedHashMap<String, String> map = new LinkedHashMap<>();
-        //     DecimalFormat df = new DecimalFormat("0%");
-        //     map.put(ReportConstants.USER_NAME, pojo.getUsername());
-        //     map.put(ReportConstants.HANDLE_COUNT, String.valueOf(pojo.getHandleCount()));
-        //     map.put(ReportConstants.PASS_RATE, df.format(pojo.getApprovalRate()));
-        //     map.put(ReportConstants.TEL_AGING, String.valueOf(pojo.getTelAging()));
-        //     map.put(ReportConstants.NOT_TEL_AGING, String.valueOf(pojo.getNotTelAging()));
-        //     map.put(ReportConstants.APPROVAL_AGING, String.valueOf(pojo.getApprovalAging()));
-        //     map.put(ReportConstants.HOLD_AGING, String.valueOf(pojo.getHoldAging()));
-        //     map.put(ReportConstants.TOTAL_AGING, String.valueOf(pojo.getTotalAging()));
-        //     map.put(ReportConstants.HOLD_COUNT, String.valueOf(pojo.getHoldCount()));
-        //     map.put(ReportConstants.OVER_TIME_COUNT, String.valueOf(pojo.getOverTimeCount()));
-        //     map.put(ReportConstants.FINAL_REFUSE_RATE, df.format(pojo.getFinalRefuseRate()));
-        //     map.put(ReportConstants.AMT_CHANGE_RATE, df.format(pojo.getAmtChangeRate()));
-        //     map.put(ReportConstants.ANTI_FRAUD_COUNT, String.valueOf(pojo.getAntiFraudCount()));
-        //     map.put(ReportConstants.REJECT_RATE, df.format(pojo.getRejectRate()));
-        //     map.put(ReportConstants.REVIEW_COUNT, String.valueOf(pojo.getReviewCount()));
-        //     respList.add(map);
-        // });
-        // Map<String,List<String>> title = new HashMap<>();
-        // List<String> head0 = new ArrayList<>();
-        // head0.add(ReportConstants.USER_NAME);
-        // head0.add(ReportConstants.HANDLE_COUNT);
-        // head0.add(ReportConstants.MAN_APPROVAL_PASS_RATE);
-        //
-        // head0.add(ReportConstants.MAN_APPROVAL_AVERAGE_AGING);
-        // head0.add(ReportConstants.SPACE);
-        // head0.add(ReportConstants.SPACE);
-        // head0.add(ReportConstants.SPACE);
-        // head0.add(ReportConstants.SPACE);
-        //
-        // head0.add(ReportConstants.HOLD_COUNT);
-        // head0.add(ReportConstants.OVER_TIME_COUNT);
-        //
-        // head0.add(ReportConstants.TOTAL_MAN_CHANGE);
-        // head0.add(ReportConstants.SPACE);
-        //
-        // head0.add(ReportConstants.ANTI_FRAUD_COUNT);
-        // head0.add(ReportConstants.REJECT_RATE);
-        // head0.add(ReportConstants.REVIEW_COUNT);
-        // // 标题第一行
-        // title.put("head0",head0);
-        // List<String> head1 = new ArrayList<>();
-        //
-        // head1.add(ReportConstants.TEL_AGING);
-        // head1.add(ReportConstants.NOT_TEL_AGING);
-        // head1.add(ReportConstants.APPROVAL_AGING);
-        // head1.add(ReportConstants.HOLD_AGING);
-        // head1.add(ReportConstants.TOTAL_AGING);
-        //
-        // // 标题第二行
-        // title.put("head1",head1);
-        //
-        // List<String> head2 = new ArrayList<>();
-        // head2.add(ReportConstants.FINAL_REFUSE_RATE);
-        // head2.add(ReportConstants.AMT_CHANGE_RATE);
-        // title.put("head2",head2);
-        //
-        // List<String> cols = new ArrayList<>();
-        //
-        // // 合并开始的列
-        // int firstCol0 = 3;
-        // int lastCol0 = 7;
-        // int firstCol1 = 10;
-        // int lastCol1 = 11;
-        // cols.add(String.valueOf(firstCol0));
-        // cols.add(String.valueOf(firstCol1));
-        //
-        // List<CellRangeAddress> merge = new ArrayList<>();
-        // CellRangeAddress region = new CellRangeAddress(0,0,firstCol0,lastCol0);
-        // CellRangeAddress region2 = new CellRangeAddress(0,0,firstCol1,lastCol1);
-        // merge.add(region);
-        // merge.add(region2);
-        // for (int i = 0; i < respList.get(0).size();i++) {
-        //     if (i >= firstCol0 && i <= lastCol0) {
-        //         continue;
-        //     } else if (i >= firstCol1 && i <= lastCol1) {
-        //         continue;
-        //     }
-        //     region = new CellRangeAddress(0,1,i,i);
-        //     merge.add(region);
-        // }
-        // ExcelExportExtTitleModel model = new ExcelExportExtTitleModel();
-        // model.setTitle(title);
-        // model.setCols(cols);
-        // //导出
-        // ExcelUtil.exportExt(null, respList, ReportConstants.STAFF_PERFORMANCE, model,merge);
         export(null,dtoList,PerformanceDto.class,ReportConstants.STAFF_PERFORMANCE);
 
     }

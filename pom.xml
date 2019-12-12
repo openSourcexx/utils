@@ -15,6 +15,8 @@
         <poi.version>4.0.1</poi.version>
         <servlet-api.version>2.5</servlet-api.version>
         <fastjson.version>1.2.47</fastjson.version>
+        <jedis.version>3.0.1</jedis.version>
+        <commons-pool2.version>2.7.0</commons-pool2.version>
 
     </properties>
 
@@ -24,6 +26,13 @@
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>${commons-pool2.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -41,7 +50,6 @@
             <artifactId>poi</artifactId>
             <version>${poi.version}</version>
         </dependency>
-        <!-- poi-ooxml XSSF is our port of the Microsoft Excel XML (2007+) file format (OOXML) to pure Java -->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
@@ -92,6 +100,12 @@
             <artifactId>lombok</artifactId>
             <version>1.18.8</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/redis.clients/jedis -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${jedis.version}</version>
         </dependency>
 
 
