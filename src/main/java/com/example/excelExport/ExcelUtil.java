@@ -2,6 +2,8 @@ package com.example.excelExport;
 
 import java.beans.PropertyDescriptor;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +30,8 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFCellStyle;
+import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -35,8 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.example.DateUtil;
-import com.example.UuidUtil;
 import com.example.annotation.Excel;
+import com.example.constant.FileSuffixConstant;
+import com.example.enums.EnumExportType;
 import com.example.exception.BizException;
 
 import javax.servlet.http.HttpServletResponse;
@@ -44,57 +49,74 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * excel导出工具类
  * 2018/12/5 15:51
+ *
+ * @author admin
  */
 public class ExcelUtil {
     private static Logger log = LoggerFactory.getLogger(ExcelUtil.class);
+
+    private static String path = "E:\\";
+
     /**
-     * 普通单行导出
+     * 通过注解单行导出
      *
      * @param dataList
-     * @param fileName 文件名
-     * @param response
+     * @param clazz
+     * @param fileName
+     * @param exportType
      * @return
      */
-    public static boolean export(HttpServletResponse response, List<?> dataList, Class<?> clazz, String fileName) {
-
+    public static boolean exportByAnnotation(List<?> dataList, Class<?> clazz, String fileName,
+        EnumExportType exportType) {
         //创建HSSFWorkbook对象(excel的文档对象)
-        HSSFWorkbook wb = new HSSFWorkbook();
+        XSSFWorkbook wb = new XSSFWorkbook();
         //建立新的sheet对象（excel的表单）
-        HSSFSheet sheet = wb.createSheet(fileName);
+        XSSFSheet sheet = wb.createSheet(fileName);
 
         // 1.生成字体对象
-        HSSFFont font = wb.createFont();
+        XSSFFont font = wb.createFont();
         font.setFontHeightInPoints((short) 12);
         font.setFontName("新宋体");
 
         // 2.设置样式
-        HSSFCellStyle style = wb.createCellStyle();
+        XSSFCellStyle style = wb.createCellStyle();
         style.setFont(font);
         style.setWrapText(true);
+        // 居中
+        style.setAlignment(HorizontalAlignment.CENTER);
 
         createHeaderRow(sheet, style, clazz);
         createBodyRow(sheet, style, dataList);
 
+        buildOutput(wb, fileName, exportType);
+        return true;
+    }
+
+    private static void buildOutput(XSSFWorkbook wb, String fileName, EnumExportType type) {
         //输出Excel文件
         OutputStream output;
         try {
-            // output = response.getOutputStream();
-            // response.reset();
-            //
-            // response.setContentType("application/octet-stream;charset=utf-8");
-            // response.setHeader("Content-Disposition",
-            //     "attachment;filename=" + new String(fileName.getBytes(), StandardCharsets.ISO_8859_1) + ".xls");
-            // wb.write(output);
-            // output.close();
-
-            // main导出
-            output = new FileOutputStream("F:/" + fileName + ".xls");
-            wb.write(output);
-            output.close();
+            switch (type) {
+                case UPLOAD_SERVER:
+                    break;
+                case STREAM:
+                    // output = response.getOutputStream();
+                    // response.reset();
+                    //
+                    // response.setContentType("application/octet-stream;charset=utf-8");
+                    // response.setHeader("Content-Disposition",
+                    //     "attachment;filename=" + new String(fileName.getBytes(), StandardCharsets.ISO_8859_1) + ".xlsx");
+                    // wb.write(output);
+                    // output.close();
+                    break;
+                default:
+                    output = new FileOutputStream(path + fileName + FileSuffixConstant.XLSX);
+                    wb.write(output);
+                    output.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return true;
     }
 
     /**
@@ -104,9 +126,9 @@ public class ExcelUtil {
      * @param style
      * @param clazz
      */
-    private static void createHeaderRow(HSSFSheet sheet, HSSFCellStyle style, Class<?> clazz) {
+    private static void createHeaderRow(XSSFSheet sheet, XSSFCellStyle style, Class<?> clazz) {
         //在sheet里创建第一行
-        HSSFRow row1 = sheet.createRow(0);
+        XSSFRow row1 = sheet.createRow(0);
         Field[] fields = clazz.getDeclaredFields();
         int num = 0;
         for (Field field : fields) {
@@ -114,9 +136,11 @@ public class ExcelUtil {
                 continue;
             }
             Excel annotation = field.getDeclaredAnnotation(Excel.class);
-            HSSFCell hSSFCell = row1.createCell(num);
+            XSSFCell hSSFCell = row1.createCell(num);
             hSSFCell.setCellStyle(style);
-            hSSFCell.setCellValue(annotation == null ? "" : annotation.name());
+            if (annotation != null) {
+                hSSFCell.setCellValue(annotation.title());
+            }
             //单元格宽度自适应
             sheet.autoSizeColumn((short) num, true);
             num++;
@@ -130,10 +154,10 @@ public class ExcelUtil {
      * @param style
      * @param dataList
      */
-    private static void createBodyRow(HSSFSheet sheet, HSSFCellStyle style, List<?> dataList) {
+    private static void createBodyRow(XSSFSheet sheet, XSSFCellStyle style, List<?> dataList) {
         for (int i = 0; i < dataList.size(); i++) {
             //从sheet第二行开始填充数据
-            HSSFRow rowN = sheet.createRow(i + 1);
+            XSSFRow rowN = sheet.createRow(i + 1);
             Object obj = dataList.get(i);
             Class<?> clazz = obj.getClass();
             Field[] fields = clazz.getDeclaredFields();
@@ -143,12 +167,17 @@ public class ExcelUtil {
                     continue;
                 }
 
+                Excel annotation = field.getDeclaredAnnotation(Excel.class);
+                if (annotation == null) {
+                    continue;
+                }
                 Object value = genBodyValueByField(clazz, obj, field);
-                HSSFCell cell00 = rowN.createCell(j);
+                XSSFCell cell00 = rowN.createCell(j);
                 cell00.setCellStyle(style);
                 cell00.setCellValue(value == null ? "" : String.valueOf(value));
                 //单元格宽度自适应
                 sheet.autoSizeColumn((short) j, true);
+
                 j++;
             }
         }
@@ -163,9 +192,9 @@ public class ExcelUtil {
      * @return
      */
     private static Object genBodyValueByField(Class<?> clazz, Object obj, Field field) {
-        PropertyDescriptor pd = null;
+        PropertyDescriptor pd;
         String type = null;
-        Object value = null;
+        Object value;
         try {
             pd = new PropertyDescriptor(field.getName(), clazz);
             Method m = pd.getReadMethod();
@@ -173,22 +202,25 @@ public class ExcelUtil {
                 .toString();
             value = m.invoke(obj);
         } catch (Exception e) {
-            log.error("类:{},{}属性方法执行异常,属性类型:{}", clazz, field.getName(),type);
+            log.error("类:{},{}属性方法执行异常,属性类型:{}", clazz, field.getName(), type);
             return null;
         }
         switch (type) {
             case "String":
             case "class java.lang.String":
-                return (String) value;
+                return value;
             case "int":
             case "class java.lang.Integer":
-                return (Integer) value;
+                return (int) value;
             case "double":
             case "class java.lang.Double":
-                return (Double) value;
+                return (double) value;
+            case "long":
+            case "class java.lang.Long":
+                return (long) value;
             case "float":
             case "class java.lang.Float":
-                return (Float) value;
+                return (float) value;
             case "char":
             case "class java.lang.Character":
                 return (Character) value;
@@ -201,9 +233,9 @@ public class ExcelUtil {
         }
     }
 
-
     /**
      * 动态合并列导出
+     *
      * @param response
      * @param list list内为每行数据，LinkedHashMap中按次序存放某一行中每一列的数据，key为每列字段中文名，value为具体数据
      * @param fileName 文件名
@@ -211,7 +243,8 @@ public class ExcelUtil {
      * @param merge 每行合并列集合
      * @return
      */
-    public static boolean exportExt(HttpServletResponse response, ArrayList<LinkedHashMap<String,String>> list, String fileName,ExcelExportExtTitleModel model,List<CellRangeAddress> merge) {
+    public static boolean exportExt(HttpServletResponse response, ArrayList<LinkedHashMap<String, String>> list,
+        String fileName, ExcelExportExtTitleModel model, List<CellRangeAddress> merge) {
         //创建HSSFWorkbook对象(excel的文档对象)
         HSSFWorkbook wb = new HSSFWorkbook();
         //建立新的sheet对象（excel的表单）
@@ -224,23 +257,26 @@ public class ExcelUtil {
 
         // 2.生成样式对象，这里的设置居中样式和版本有关，我用的poi用HSSFCellStyle.ALIGN_CENTER会报错，所以用下面的
         HSSFCellStyle style = wb.createCellStyle();
-        style.setFont(font); // 调用字体样式对象
+        // 调用字体样式对象
+        style.setFont(font);
         style.setWrapText(true);
-        style.setAlignment(HorizontalAlignment.CENTER);//设置居中样式
+        // 设置居中样式
+        style.setAlignment(HorizontalAlignment.CENTER);
 
-        //动态合并列
+        // 动态合并列
         merge.forEach(sheet::addMergedRegion);
 
-        //创建第一行
+        // 创建第一行
         HSSFRow row0 = sheet.createRow(0);
         int num = 0;
-        List<String> head0 = model.getTitle().get("head0");
+        List<String> head0 = model.getTitle()
+            .get("head0");
         for (String field : head0) {
             HSSFCell hSSFCell = row0.createCell(num);
             hSSFCell.setCellStyle(style);
             hSSFCell.setCellValue(field);
             //单元格宽度自适应
-            sheet.autoSizeColumn((short) num,true);
+            sheet.autoSizeColumn((short) num, true);
             num++;
         }
 
@@ -250,13 +286,14 @@ public class ExcelUtil {
         if (cols.size() > 0) {
             for (int i = 0; i < cols.size(); i++) {
                 int n = Integer.valueOf(cols.get(i));
-                List<String> headn = model.getTitle().get("head" + (i + 1));
+                List<String> headn = model.getTitle()
+                    .get("head" + (i + 1));
                 for (String field : headn) {
                     HSSFCell hSSFCell = row1.createCell(n);
                     hSSFCell.setCellStyle(style);
                     hSSFCell.setCellValue(field);
                     //单元格宽度自适应
-                    sheet.autoSizeColumn((short) n,true);
+                    sheet.autoSizeColumn((short) n, true);
                     n++;
                 }
             }
@@ -274,7 +311,7 @@ public class ExcelUtil {
                 cell00.setCellStyle(style);
                 cell00.setCellValue(entry.getValue());
                 //单元格宽度自适应
-                sheet.autoSizeColumn((short) j,true);
+                sheet.autoSizeColumn((short) j, true);
                 j++;
             }
 
@@ -284,14 +321,6 @@ public class ExcelUtil {
         OutputStream output;
         try {
             // web导出
-            /*output = response.getOutputStream();
-            response.reset();
-
-            response.setContentType("application/octet-stream;charset=utf-8");
-            response.setHeader("Content-Disposition", "attachment;filename="
-                    + new String(fileName.getBytes(), "iso-8859-1") + ".xls");*/
-
-            // main导出
             output = new FileOutputStream("F:/" + fileName + ".xls");
 
             wb.write(output);
@@ -301,7 +330,6 @@ public class ExcelUtil {
         }
         return true;
     }
-
 
     /**
      * 从第一行开始读取excel文件
@@ -317,14 +345,14 @@ public class ExcelUtil {
      * 从第rowNum开始读取excel文件
      *
      * @param fileStream 文件流
-     * @param rowNum 开始读取的行数，最小为1
+     * @param startRowNum 开始读取的行数，最小为1
      * @return 文件内容
      */
-    public static List<List<String>> readExcel(InputStream fileStream, int rowNum) {
+    public static List<List<String>> readExcel(InputStream fileStream, int startRowNum) {
         try {
             XSSFWorkbook xssfWorkbook = new XSSFWorkbook(fileStream);
             XSSFSheet xssfSheet = xssfWorkbook.getSheetAt(0);
-            return readExcel(xssfWorkbook, rowNum, xssfSheet.getLastRowNum() - rowNum + 1);
+            return readExcel(xssfWorkbook, startRowNum, xssfSheet.getLastRowNum() - startRowNum + 1);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -396,32 +424,6 @@ public class ExcelUtil {
     }
 
     /**
-     * 根据data生成excel并在本地生成文件
-     *
-     * @param data 要设置的数据
-     * @param filePathWithName 生成文件的路径，带文件名
-     * @return 生成的文件File
-     */
-    public static File create(List<List<String>> data, String filePathWithName) {
-        try {
-            XSSFWorkbook xssfWorkbook = new XSSFWorkbook();
-            XSSFSheet xssfSheet = xssfWorkbook.createSheet();
-            // 遍历行
-            generateCellValue(data, xssfSheet);
-
-            File nFile = new File(filePathWithName);
-            OutputStream os = new FileOutputStream(nFile);
-            xssfWorkbook.write(os);
-            os.flush();
-            os.close();
-            return nFile;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /**
      * 获取表格中的值
      *
      * @param cell 表格
@@ -432,63 +434,22 @@ public class ExcelUtil {
         return cell.getStringCellValue();
     }
 
-    public static String renameFile(String fileName) {
-        return UuidUtil.nextId() + fileName.substring(fileName.lastIndexOf("."));
-    }
-
-    /**
-     * 创建sheet
-     */
-    public static void createSheet(List<List<String>> data, int sheetIndex, XSSFWorkbook xssfWorkbook) {
-        XSSFSheet xssfSheet = xssfWorkbook.createSheet();
-        xssfWorkbook.setSheetName(sheetIndex - 1, "第" + sheetIndex + "页");
-
-        generateCellValue(data, xssfSheet);
-    }
-
-    /**
-     * 把data中的参数设置到excel中
-     *
-     * @param data 参数
-     * @param xssfSheet 表格
-     */
-    private static void generateCellValue(List<List<String>> data, XSSFSheet xssfSheet) {
-        // 遍历行
-        for (int i = 0; i < data.size(); i++) {
-            XSSFRow row = xssfSheet.createRow(i);
-            // 遍历列
-            List<String> rowData = data.get(i);
-            for (int j = 0; j < rowData.size(); j++) {
-                XSSFCell cell = row.createCell(j);
-                cell.setCellValue(rowData.get(j));
-            }
-
-        }
-    }
-
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
 
         List<PerformanceDto> dtoList = new ArrayList<>();
-        for (int i=0;i<10;i++) {
+        for (int i = 0; i < 10; i++) {
             PerformanceDto pojo = new PerformanceDto();
-            pojo.setUsername(i+"a");
-            pojo.setHandleCount(i);
-            pojo.setApprovalRate(new BigDecimal(i+2));
-            pojo.setTelAging(new BigDecimal(i+3));
-            pojo.setNotTelAging(new BigDecimal(i+3));
-            pojo.setApprovalAging(new BigDecimal(i+3));
-            pojo.setHoldAging(new BigDecimal(i+4));
-            pojo.setTotalAging(new BigDecimal(i+4));
-            pojo.setHoldCount(i+6);
-            pojo.setOverTimeCount(i+6);
-            pojo.setFinalRefuseRate(new BigDecimal(i+7));
-            pojo.setAmtChangeRate(new BigDecimal(i+8));
-            pojo.setAntiFraudCount(i+4);
-            pojo.setRejectRate(new BigDecimal(i+9));
-            pojo.setReviewCount(i+3);
+            pojo.setUsername(i + "a");
+            pojo.setHandleCount((long) i);
+            pojo.setApprovalRate(new BigDecimal(i + 2));
+            pojo.setDate(new Date());
+            pojo.setCount(i);
+            pojo.setDemo("111");
             dtoList.add(pojo);
         }
-        export(null,dtoList,PerformanceDto.class,ReportConstants.STAFF_PERFORMANCE);
-
+        // exportByAnnotation(dtoList, PerformanceDto.class, ExcelReportConstants.STAFF_PERFORMANCE, EnumExportType.LOCAL);
+        InputStream in = new FileInputStream(new File("E:\\员工绩效统计.xlsx"));
+        List<List<String>> list = readExcel(in);
+        System.out.println();
     }
 }
