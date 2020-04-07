@@ -3,7 +3,7 @@ package com.example.enums;
 /**
  * 导出excel类型
  *
- * @author tangaq25172@yunrong.cn
+ * @author tangaq25172@xxx.cn
  * @since 2019/12/27 11:17
  */
 public enum EnumExportType {
