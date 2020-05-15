@@ -1,6 +1,5 @@
 package com.example;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -323,6 +322,23 @@ public class DateUtil {
         return convertSuccess;
     }
 
+    /**
+     * 计算相差月份
+     *
+     * @param startTime
+     * @param endTime
+     * @return
+     */
+    private static int calMonthInterval(Date startTime, Date endTime) {
+        Calendar start = Calendar.getInstance();
+        start.setTime(startTime);
+        Calendar end = Calendar.getInstance();
+        end.setTime(endTime);
+        int result = end.get(Calendar.MONTH) - start.get(Calendar.MONTH);
+        int month = (end.get(Calendar.YEAR) - start.get(Calendar.YEAR)) * 12;
+        int monthInterval = Math.abs(month + result);
+        return monthInterval;
+    }
 
     public static void main(String[] args) {
         System.out.println(DateUtil.getCurrentMonthStartTime());
