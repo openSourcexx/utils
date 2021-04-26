@@ -12,7 +12,7 @@
         <!-- http://mvnrepository.com/ -->
         <commons-lang3.version>3.8.1</commons-lang3.version>
         <commons-pool2.version>2.7.0</commons-pool2.version>
-        <commons-io.version>2.6</commons-io.version>
+        <commons-io.version>2.7</commons-io.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <slf4j-log4j12.version>1.7.25</slf4j-log4j12.version>
         <poi.version>4.0.1</poi.version>
