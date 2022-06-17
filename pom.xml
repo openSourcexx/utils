@@ -17,7 +17,7 @@
         <slf4j-log4j12.version>1.7.25</slf4j-log4j12.version>
         <poi.version>4.0.1</poi.version>
         <servlet-api.version>2.5</servlet-api.version>
-        <fastjson.version>1.2.47</fastjson.version>
+        <fastjson.version>1.2.83</fastjson.version>
         <jedis.version>3.0.1</jedis.version>
         <httpcomponents.version>4.5.10</httpcomponents.version>
 
